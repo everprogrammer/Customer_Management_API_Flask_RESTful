@@ -1,9 +1,8 @@
 import os
 from flask_restful import Resource, reqparse
 from flask import request
-from .models import Customer, Document, Log, User
+# from .models import Customer, Document, Log, User
 from werkzeug.utils import secure_filename
-from .config import db
 
 
 class CustomerResource(Resource):
@@ -15,6 +14,7 @@ class CustomerResource(Resource):
     parser.add_argument('state', type=str, required=True)
 
     def post(self):
+        from .models import Customer
         data = CustomerResource.parser.parse_args()
 
         customer = Customer.find_by_company_name(data['company_name'])
@@ -24,9 +24,16 @@ class CustomerResource(Resource):
         if not Customer.is_valid_state(data['state']):
             return {'message': 'Invalid state provided, please provide a valid state'}, 400
         
-        if request.files['logo'] and Customer.allowed_logo_file(request.files['logo'].filename):
-            filename = secure_filename(request.files['logo'].filename)
-            request.files['logo'].save(os.path.join('uploads/photos', filename))
+        # LOGO UPLOADS
+        logo = request.files['logo']
+        if logo:
+            if not Customer.allowed_logo_file(logo.filename):
+                return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
+            filename = secure_filename(logo.filename)
+            logo.save(os.path.join('uploads/photos', filename))
+        else:
+            filename = None
+
  
         new_customer = Customer(
             company_name=data['company_name'],
@@ -45,6 +52,7 @@ class CustomerResource(Resource):
     
 
     def get(self, company_name):
+        from .models import Customer
         customer = Customer.find_by_company_name(company_name)
 
         if customer:
@@ -53,6 +61,7 @@ class CustomerResource(Resource):
     
 
     def delete(self, company_name):
+        from .models import Customer
         customer = Customer.find_by_company_name(company_name)
 
         if customer:
@@ -61,6 +70,7 @@ class CustomerResource(Resource):
     
     
     def put(self, company_name):
+        from .models import Customer
         data = CustomerResource.parser.parse_args()
         customer = Customer.find_by_company_name(data['company_name'])
 
@@ -70,9 +80,13 @@ class CustomerResource(Resource):
         if not Customer.is_valid_state(data['state']):
             return {'message': 'Invalid state provided, please provide a valid state'}, 400
         
-        if request.files['logo'] and Customer.allowed_logo_file(request.files['logo'].filename):
-            filename = secure_filename(request.files['logo'].filename)
-            request.files['logo'].save(os.path.join('uploads/photos', filename))
+        filename = customer.logo
+        logo = request.files['logo']
+        if logo:
+            if not Customer.allowed_logo_file(logo.filename):
+                return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
+            filename = secure_filename(logo.filename)
+            logo.save(os.path.join('uploads/photos', filename))
 
         customer.company_name = data['company_name']
         customer.logo = filename
