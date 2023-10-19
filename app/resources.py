@@ -16,37 +16,80 @@ class CustomerResource(Resource):
 
     def post(self):
         data = CustomerResource.parser.parse_args()
-        company_name = data['name']
-        logo = request.files['logo']
-        phone_number = data['phone_number']
-        address = data['address']
-        state = data['state']
-        filename= None
 
-        customer = Customer.find_by_company_name(company_name)
+        customer = Customer.find_by_company_name(data['company_name'])
         if customer:
-            return {'message': f'Company ({company_name}) already exists!'}, 400
+            return {'message': f"Company ({data['company_name']}) already exists!"}, 400
 
-        if not Customer.is_valid_state(state):
+        if not Customer.is_valid_state(data['state']):
             return {'message': 'Invalid state provided, please provide a valid state'}, 400
         
-        if logo and Customer.allowed_logo_file(logo.filename):
-            filename = secure_filename(logo.filename)
-            logo.save(os.path.join('uploads/photos', filename))
+        if request.files['logo'] and Customer.allowed_logo_file(request.files['logo'].filename):
+            filename = secure_filename(request.files['logo'].filename)
+            request.files['logo'].save(os.path.join('uploads/photos', filename))
  
         new_customer = Customer(
-            company_name=company_name,
+            company_name=data['company_name'],
             logo=filename,
-            phone_number=phone_number,
-            address=address,
-            state=state
+            phone_number=data['phone_number'],
+            address=data['address'],
+            state=data['state']
         )
 
-        db.session.add(new_customer)
-        db.session.commit()
+        try:
+            new_customer.save_to_db()
+        except:
+            return {'message': 'An error occurred inserting the customer!'}, 500 
 
-        return {'message': f'Company ({company_name}) created successfully!'}, 201
+        return new_customer.json(), 201
     
+
+    def get(self, company_name):
+        customer = Customer.find_by_company_name(company_name)
+
+        if customer:
+            return customer.json(), 200
+        return {'message': f'Customer ({company_name}) was not found!'}, 404
+    
+
+    def delete(self, company_name):
+        customer = Customer.find_by_company_name(company_name)
+
+        if customer:
+            customer.delete_from_db()
+        return {'message': 'Customer deleted successfully'}, 200
+    
+    
+    def put(self, company_name):
+        data = CustomerResource.parser.parse_args()
+        customer = Customer.find_by_company_name(data['company_name'])
+
+        if not customer:
+            return {'message': f'Customer ({company_name}) was not found!'}, 404
+
+        if not Customer.is_valid_state(data['state']):
+            return {'message': 'Invalid state provided, please provide a valid state'}, 400
+        
+        if request.files['logo'] and Customer.allowed_logo_file(request.files['logo'].filename):
+            filename = secure_filename(request.files['logo'].filename)
+            request.files['logo'].save(os.path.join('uploads/photos', filename))
+
+        customer.company_name = data['company_name']
+        customer.logo = filename
+        customer.phone_number = data['phone_number']
+        customer.address = data['address']
+        customer.state = data['state']
+
+        try:
+            customer.save_to_db()
+        except:
+            return {'message': 'An error occurred while updating a customer'}, 500
+        
+        return customer.json(), 200
+
+
+
+
 
         
         

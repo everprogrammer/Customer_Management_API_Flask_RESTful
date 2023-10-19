@@ -23,6 +23,8 @@ photos = UploadSet('photos', IMAGES)
 documents = UploadSet('documents', DOCUMENTS)
 configure_uploads(app, (photos, documents))
 
-from app import models, resources
+if __name__ == '__main__':
+    from app import models, resources
 
-db.create_all()
+    db.create_all()
+    app.run(debug=True)

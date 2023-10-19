@@ -4,8 +4,8 @@ from enum import Enum
 import pytz
 from werkzeug.security import generate_password_hash
 
-tz = pytz.timezone('Asia/Tehran')
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
+from .CONST import ALLOWED_EXTENSIONS_PHOTOS, preferred_tz
+
 
 
 class CustomerState(Enum):
@@ -32,14 +32,26 @@ class Customer(db.Model):
     documents = db.relationship('Document', backref='customer', lazy=True)
     logs = db.relationship('Log', backref='customer', lazy=True)
 
+    def json(self):
+        return {
+            'id': self.id,
+            'company_name': self.company_name,
+            'logo': self.logo,
+            'phone_number': self.phone_number,
+            'address': self.address,
+            'state': self.state.value,
+            'documents': [document.filename for document in self.documents],
+            'logs': [log.json() for log in self.logs]
+        }
+
     @staticmethod
     def allowed_logo_file(filename):
-        return filename and '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        return filename and '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_PHOTOS
     
     @staticmethod
     def is_valid_state(state):
-        return state in [state.value for state in CustomerState]
-    
+        return state.lower() in [state.value.lower() for state in CustomerState]
+
     @classmethod    
     def find_by_company_name(cls, company_name):
         return cls.query.filter_by(company_name).first()
@@ -60,7 +72,7 @@ class Log(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), required=True)
     state = db.Column(db.Enum(CustomerState), required=True)
-    timestamp = db.Column(db.DateTime, required=True, default= datetime.now(tz))
+    timestamp = db.Column(db.DateTime, required=True, default= datetime.now(preferred_tz))
 
 
 class User(db.Model):
@@ -76,6 +88,10 @@ class User(db.Model):
 
     def save_to_db(self):
         db.session.add(self)
+        db.session.commit()
+
+    def delete_from_db(self):
+        db.session.delete(self)
         db.session.commit()
 
     @classmethod
