@@ -5,6 +5,7 @@ import pytz
 from werkzeug.security import generate_password_hash
 
 tz = pytz.timezone('Asia/Tehran')
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 
 
 class CustomerState(Enum):
@@ -31,6 +32,14 @@ class Customer(db.Model):
     documents = db.relationship('Document', backref='customer', lazy=True)
     logs = db.relationship('Log', backref='customer', lazy=True)
 
+    @staticmethod
+    def allowed_logo_file(filename):
+        return filename and '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    
+    @staticmethod
+    def is_valid_state(state):
+        return state in [state.value for state in CustomerState]
+    
     @classmethod    
     def find_by_company_name(cls, company_name):
         return cls.query.filter_by(company_name).first()
@@ -76,3 +85,9 @@ class User(db.Model):
     @classmethod
     def find_by_id(cls, id):
         return cls.query.filter_by(id=id).first()
+
+
+
+
+
+
