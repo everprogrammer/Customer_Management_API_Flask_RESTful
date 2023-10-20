@@ -6,7 +6,6 @@ from .CONST import ALLOWED_EXTENSIONS_PHOTOS, preferred_tz
 from db import db
 
 
-
 class CustomerState(Enum):
     Introduction = "Introduction"
     Presentation = "Presentation"
@@ -23,11 +22,11 @@ class Customer(db.Model):
     __tablename__ = 'customers'
 
     id = db.Column(db.Integer, primary_key=True)
-    company_name = db.Column(db.String(80),  nullable=False)
+    company_name = db.Column(db.String(80))
     logo = db.Column(db.String(80))
     phone_number = db.Column(db.Integer, nullable=False)
     address = db.Column(db.String(100), nullable=False)
-    state = db.Column(db.Enum(CustomerState),  nullable=False)
+    state = db.Column(db.Enum(CustomerState), nullable=False)   
     documents = db.relationship('Document', backref='customers', lazy=True)
     logs = db.relationship('Log', backref='customers', lazy=True)
 
@@ -42,6 +41,14 @@ class Customer(db.Model):
             'documents': [document.filename for document in self.documents],
             'logs': [log.json() for log in self.logs]
         }
+    
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete_from_db(self):
+        db.session.delete(self)
+        db.session.commit()
 
     @staticmethod
     def allowed_logo_file(filename):

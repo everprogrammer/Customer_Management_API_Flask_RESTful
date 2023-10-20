@@ -3,21 +3,20 @@ from flask_restful import Resource, reqparse
 from flask import request
 # from .models import Customer, Document, Log, User
 from werkzeug.utils import secure_filename
+from .models import Customer
 
 
 class CustomerResource(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('company_name', type=str, required=True)
     parser.add_argument('logo', type=str, required=False)
     parser.add_argument('phone_number', type=int, required=True)
     parser.add_argument('address', type=str, required=True)
     parser.add_argument('state', type=str, required=True)
 
-    def post(self):
-        from .models import Customer
+    def post(self, company_name):
         data = CustomerResource.parser.parse_args()
 
-        customer = Customer.find_by_company_name(data['company_name'])
+        customer = Customer.find_by_company_name(company_name)
         if customer:
             return {'message': f"Company ({data['company_name']}) already exists!"}, 400
 
@@ -25,18 +24,20 @@ class CustomerResource(Resource):
             return {'message': 'Invalid state provided, please provide a valid state'}, 400
         
         # LOGO UPLOADS
-        logo = request.files['logo']
-        if logo:
-            if not Customer.allowed_logo_file(logo.filename):
-                return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
-            filename = secure_filename(logo.filename)
-            logo.save(os.path.join('uploads/photos', filename))
+        if 'logo' in request.files:
+            logo = request.files['logo']
+            if logo:
+                if not Customer.allowed_logo_file(logo.filename):
+                    return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
+                filename = secure_filename(logo.filename)
+                logo.save(os.path.join('uploads/photos', filename))
+            else:
+                filename = None
         else:
             filename = None
 
- 
         new_customer = Customer(
-            company_name=data['company_name'],
+            company_name= company_name,
             logo=filename,
             phone_number=data['phone_number'],
             address=data['address'],
@@ -52,7 +53,6 @@ class CustomerResource(Resource):
     
 
     def get(self, company_name):
-        from .models import Customer
         customer = Customer.find_by_company_name(company_name)
 
         if customer:
@@ -61,7 +61,6 @@ class CustomerResource(Resource):
     
 
     def delete(self, company_name):
-        from .models import Customer
         customer = Customer.find_by_company_name(company_name)
 
         if customer:
@@ -70,9 +69,8 @@ class CustomerResource(Resource):
     
     
     def put(self, company_name):
-        from .models import Customer
         data = CustomerResource.parser.parse_args()
-        customer = Customer.find_by_company_name(data['company_name'])
+        customer = Customer.find_by_company_name(company_name)
 
         if not customer:
             return {'message': f'Customer ({company_name}) was not found!'}, 404
@@ -81,14 +79,19 @@ class CustomerResource(Resource):
             return {'message': 'Invalid state provided, please provide a valid state'}, 400
         
         filename = customer.logo
-        logo = request.files['logo']
-        if logo:
-            if not Customer.allowed_logo_file(logo.filename):
-                return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
-            filename = secure_filename(logo.filename)
-            logo.save(os.path.join('uploads/photos', filename))
+        if 'logo' in request.files:
+            logo = request.files['logo']
+            if logo:
+                if not Customer.allowed_logo_file(logo.filename):
+                    return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
+                filename = secure_filename(logo.filename)
+                logo.save(os.path.join('uploads/photos', filename))
+            else:
+                filename = None
+        else:
+            filename = None
 
-        customer.company_name = data['company_name']
+        customer.company_name = company_name
         customer.logo = filename
         customer.phone_number = data['phone_number']
         customer.address = data['address']
@@ -101,6 +104,12 @@ class CustomerResource(Resource):
         
         return customer.json(), 200
 
+
+class CustomerListResource(Resource):
+    def get(self):
+        customers = Customer.query.all()
+
+        return {'customers': [customer.json() for customer in customers]}
 
 
 

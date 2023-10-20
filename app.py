@@ -2,7 +2,7 @@ import os
 from flask import Flask
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
-from files.resources import CustomerResource
+from files.resources import CustomerResource, CustomerListResource
 from flask_migrate import Migrate
 
 from db import db
@@ -29,7 +29,8 @@ def create_tables():
 
 jwt = JWTManager(app)
 
-api.add_resource(CustomerResource, '/customer')
+api.add_resource(CustomerResource, '/customer/<string:company_name>')
+api.add_resource(CustomerListResource, '/customers')
 
 
 if __name__ == '__main__':
