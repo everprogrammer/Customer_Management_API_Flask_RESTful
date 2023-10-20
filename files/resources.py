@@ -33,7 +33,7 @@ class CustomerResource(Resource):
                 if not Customer.allowed_logo_file(logo.filename):
                     return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
                 filename = secure_filename(logo.filename)
-                logo.save(os.path.join('uploads/photos', filename))
+                logo.save(os.path.join('uploads', filename))
             else:
                 filename = None
         else:
@@ -136,12 +136,13 @@ class CustomerListResource(Resource):
         return {'customers': [customer.json() for customer in customers]}
 
 
-class DocumentResource(Resource):
+class DocumentUploadResource(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('filename', type=str, required=True)
 
     def post(self, customer_id, name):
-        import app
+        upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
+
         # data = DocumentResource.parser.parse_args()
         customer = Customer.find_by_company_id(customer_id)
 
@@ -169,11 +170,28 @@ class DocumentResource(Resource):
                 except:
                     return {'message': 'An error occurred inserting the document!'}, 500
                 
-                document.save(app.app.config['UPLOAD_FOLDER'], filename)
+                document.save(os.path.join(upload_folder, filename))
 
                 return new_document.json()
         
         return {'message': 'No document file provided!'}
+
+class DocumentDeleteResource(Resource):
+    def delete(self, customer_id, document_id):
+        document = Document.query.filter_by(customer_id=customer_id, id=document_id).first()
+
+        if document:
+            document.delete_from_db()
+            return {'message': 'Document deleted successfully!'}, 200
+        return {'message': 'Document not found!'}, 404
+
+
+
+class DocumentListResource(Resource):
+    def get(self, customer_id):
+        documents = Document.query.filter_by(customer_id=customer_id)
+
+        return [document.json() for document in documents]
 
 class LogResource(Resource):
 

@@ -2,15 +2,16 @@ import os
 from flask import Flask
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
-from files.models import CustomerState
-from files.resources import CustomerResource, CustomerListResource, DocumentResource, LogResource
 from flask_migrate import Migrate
 
-
+from files.resources import (CustomerResource, CustomerListResource, 
+                             DocumentUploadResource, DocumentDeleteResource,
+                             DocumentListResource, LogResource)
 from db import db
 
 
 baseDir = os.path.abspath(os.path.dirname(__file__))
+
 
 app = Flask(__name__)
 
@@ -18,7 +19,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'data.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'secretkey'
-app.config['UPLOAD_FOLDER'] = os.path.join(baseDir ,'uploads')
+app.config['UPLOAD_FOLDER'] = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
 app.secret_key = 'Amir'
 
 db.init_app(app)
@@ -33,9 +34,12 @@ def create_tables():
 
 jwt = JWTManager(app)
 
+
 api.add_resource(CustomerResource, '/customer/<string:company_name>')
 api.add_resource(CustomerListResource, '/customers')
-api.add_resource(DocumentResource, '/customer/<int:customer_id>/docs/<string:name>')
+api.add_resource(DocumentUploadResource, '/customer/<int:customer_id>/doc/<string:name>')
+api.add_resource(DocumentDeleteResource, '/customer/<int:customer_id>/doc/<int:document_id>')
+api.add_resource(DocumentListResource, '/customer/<int:customer_id>/docs')
 api.add_resource(LogResource, '/customer/<int:customer_id>/statelogs')
 
 
