@@ -3,7 +3,10 @@ from flask_restful import Resource, reqparse
 from flask import request
 # from .models import Customer, Document, Log, User
 from werkzeug.utils import secure_filename
-from .models import Customer
+from datetime import datetime
+from .CONST import preferred_tz
+
+from .models import Customer, Document, Log
 
 
 class CustomerResource(Resource):
@@ -18,7 +21,7 @@ class CustomerResource(Resource):
 
         customer = Customer.find_by_company_name(company_name)
         if customer:
-            return {'message': f"Company ({data['company_name']}) already exists!"}, 400
+            return {'message': f"Company ({company_name}) already exists!"}, 400
 
         if not Customer.is_valid_state(data['state']):
             return {'message': 'Invalid state provided, please provide a valid state'}, 400
@@ -44,10 +47,22 @@ class CustomerResource(Resource):
             state=data['state']
         )
 
+
         try:
             new_customer.save_to_db()
-        except:
-            return {'message': 'An error occurred inserting the customer!'}, 500 
+        except Exception as e:
+            return {'message': f'An error occurred inserting the customer!error{str(e)}'}, 500 
+        
+        new_log = Log(
+            customer_id = new_customer.id,
+            state = data['state'],
+            timestamp = datetime.now(preferred_tz)
+                    )
+
+        try:
+            new_log.save_to_db()
+        except Exception as e:
+            return {'message': f'An error occurred inserting the log!error{str(e)}'}, 500 
 
         return new_customer.json(), 201
     
@@ -91,6 +106,15 @@ class CustomerResource(Resource):
         else:
             filename = None
 
+
+        if customer.state.value.lower() != data['state'].lower():
+            new_log = Log(
+                customer_id = customer.id,
+                state = data['state'],
+                timestamp = datetime.now(preferred_tz)
+            )
+            new_log.save_to_db()
+
         customer.company_name = company_name
         customer.logo = filename
         customer.phone_number = data['phone_number']
@@ -101,7 +125,7 @@ class CustomerResource(Resource):
             customer.save_to_db()
         except:
             return {'message': 'An error occurred while updating a customer'}, 500
-        
+                
         return customer.json(), 200
 
 
@@ -110,6 +134,56 @@ class CustomerListResource(Resource):
         customers = Customer.query.all()
 
         return {'customers': [customer.json() for customer in customers]}
+
+
+class DocumentResource(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('filename', type=str, required=True)
+
+    def post(self, customer_id, name):
+        import app
+        # data = DocumentResource.parser.parse_args()
+        customer = Customer.find_by_company_id(customer_id)
+
+        if not customer:
+            return {'message': 'Customer not found!'}, 404
+        
+        # FILE UPLOAD
+        if 'document' in request.files:
+            document = request.files['document']
+
+            if document:
+                if not Document.allowed_document_file(document.filename):
+                    return {'message': 'Invalid file type for document'}, 400
+                
+                filename = secure_filename(document.filename)
+
+                new_document = Document(
+                    name=name,
+                    filename=filename,
+                    customer_id=customer_id
+                )
+
+                try:
+                    new_document.save_to_db()
+                except:
+                    return {'message': 'An error occurred inserting the document!'}, 500
+                
+                document.save(app.app.config['UPLOAD_FOLDER'], filename)
+
+                return new_document.json()
+        
+        return {'message': 'No document file provided!'}
+
+class LogResource(Resource):
+
+    def get(self, customer_id):
+        # customer = Customer.find_by_company_id(customer_id)
+
+        logs = Log.query.filter_by(customer_id=customer_id)
+
+        return [log.json() for log in logs]
+
 
 
 
