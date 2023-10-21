@@ -24,7 +24,6 @@ class CustomerResource(Resource):
 
         upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
 
-
         customer = Customer.find_by_company_name(company_name)
         if customer:
             return {'message': f"Company ({company_name}) already exists!"}, 400
@@ -32,7 +31,7 @@ class CustomerResource(Resource):
         if not Customer.is_valid_state(data['state']):
             return {'message': 'Invalid state provided, please provide a valid state'}, 400
         
-        filename = None 
+        
 
         # LOGO UPLOADS
         if 'logo' in request.files:
@@ -42,6 +41,8 @@ class CustomerResource(Resource):
                     return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
                 filename = secure_filename(logo.filename)
                 logo.save(os.path.join(upload_folder, filename))
+        else:
+            filename=None
 
 
         new_customer = Customer(

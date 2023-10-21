@@ -56,7 +56,7 @@ class Customer(db.Model):
 
     @staticmethod
     def allowed_logo_file(filename):
-        return filename and '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_PHOTOS
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_PHOTOS
     
     @staticmethod
     def is_valid_state(state):
