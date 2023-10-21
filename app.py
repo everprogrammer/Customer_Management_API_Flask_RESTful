@@ -5,8 +5,9 @@ from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 
 from files.resources import (CustomerResource, CustomerListResource, 
-                             DocumentUploadResource, DocumentDeleteResource,
-                             DocumentListResource, LogResource)
+                             DocumentUploadResource,  DocumentDownloadResource,
+                             DocumentDeleteResource, DocumentListResource, 
+                             LogResource)
 from db import db
 
 
@@ -37,10 +38,12 @@ jwt = JWTManager(app)
 
 api.add_resource(CustomerResource, '/customer/<string:company_name>')
 api.add_resource(CustomerListResource, '/customers')
-api.add_resource(DocumentUploadResource, '/customer/<int:customer_id>/doc/<string:name>')
-api.add_resource(DocumentDeleteResource, '/customer/<int:customer_id>/doc/<int:document_id>')
+api.add_resource(DocumentUploadResource, '/customer/<int:customer_id>/upload-doc/<string:name>')
+api.add_resource(DocumentDownloadResource, '/customer/<int:customer_id>/download-doc/<int:document_id>')
+api.add_resource(DocumentDeleteResource, '/customer/<int:customer_id>/delete-doc/<int:document_id>')
 api.add_resource(DocumentListResource, '/customer/<int:customer_id>/docs')
 api.add_resource(LogResource, '/customer/<int:customer_id>/statelogs')
+
 
 
 

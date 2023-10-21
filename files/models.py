@@ -29,8 +29,8 @@ class Customer(db.Model):
     phone_number = db.Column(db.Integer, nullable=False)
     address = db.Column(db.String(100), nullable=False)
     state = db.Column(db.Enum(CustomerState), nullable=False)   
-    documents = db.relationship('Document', backref='customers', lazy=True)
-    logs = db.relationship('Log', backref='customers', lazy=True)
+    documents = db.relationship('Document', backref='customers', lazy=True, cascade='all, delete-orphan')
+    logs = db.relationship('Log', backref='customers', lazy=True, cascade='all, delete-orphan')
 
     def json(self):
         return {
@@ -49,6 +49,8 @@ class Customer(db.Model):
         db.session.commit()
 
     def delete_from_db(self):
+        self.documents.clear()
+        self.logs.clear()
         db.session.delete(self)
         db.session.commit()
 
