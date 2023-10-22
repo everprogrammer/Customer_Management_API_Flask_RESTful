@@ -2,12 +2,10 @@ import os
 from flask_restful import Resource, reqparse
 from flask import request, make_response
 from flask import send_from_directory
-# from .models import Customer, Document, Log, User
 from werkzeug.utils import secure_filename
-from datetime import datetime
-from api.utils.CONST import preferred_tz
 
-from api.models import Customer, Document, Log
+from api.models import Customer, Document
+from api.utils.CONST import UPLOAD_FOLDER_DOCUMENT
 
 
 class DocumentUploadResource(Resource):
@@ -15,9 +13,6 @@ class DocumentUploadResource(Resource):
     parser.add_argument('filename', type=str, required=True)
 
     def post(self, customer_id, name):
-        upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
-
-        # data = DocumentResource.parser.parse_args()
         customer = Customer.find_by_company_id(customer_id)
 
         if not customer:
@@ -44,7 +39,7 @@ class DocumentUploadResource(Resource):
                 except:
                     return {'message': 'An error occurred inserting the document!'}, 500
                 
-                document.save(os.path.join(upload_folder, filename))
+                document.save(os.path.join(UPLOAD_FOLDER_DOCUMENT, filename))
 
                 return new_document.json()
         
@@ -57,14 +52,12 @@ class DocumentDownloadResource(Resource):
         if not document:
             return {'message': 'Document not found!'}, 404
         
-        upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
-
-        response = make_response(send_from_directory(upload_folder, document.filename, as_attachment=True))
+        response = make_response(send_from_directory(UPLOAD_FOLDER_DOCUMENT, document.filename, as_attachment=True))
         response.headers['Content-Disposition'] = f'attachment; filename={document.filename}'
 
         return response 
     
-        
+
 
 class DocumentDeleteResource(Resource):
     def delete(self, customer_id, document_id):

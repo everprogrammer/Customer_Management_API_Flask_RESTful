@@ -1,14 +1,13 @@
 import os
 from flask_restful import Resource, reqparse
-from flask import request, make_response
-from flask import send_from_directory
-# from .models import Customer, Document, Log, User
+from flask import request
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from api.utils.CONST import preferred_tz
 from flask_jwt_extended import jwt_required
 
-from api.models import Customer, Document, Log
+from api.models import Customer, Log
+from api.utils.CONST import UPLOAD_FOLDER_LOGO
 
 
 
@@ -18,9 +17,7 @@ class CustomerResource(Resource):
     parser.add_argument('address', type=str, required=True)
     parser.add_argument('state', type=str, required=True)
 
-    @jwt_required()
     def post(self, company_name):
-        upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
 
         customer = Customer.find_by_company_name(company_name)
         if customer:
@@ -36,7 +33,7 @@ class CustomerResource(Resource):
                 if not Customer.allowed_logo_file(logo.filename):
                     return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
                 filename = secure_filename(logo.filename)
-                logo.save(os.path.join(upload_folder, filename))
+                logo.save(os.path.join(UPLOAD_FOLDER_LOGO, filename))
         else:
             filename=None
 
@@ -68,7 +65,7 @@ class CustomerResource(Resource):
 
         return new_customer.json(), 201
       
-
+    
     def get(self, company_name):
         customer = Customer.find_by_company_name(company_name)
 
@@ -86,10 +83,8 @@ class CustomerResource(Resource):
     
     @jwt_required()
     def put(self, company_name):
+
         customer = Customer.find_by_company_name(company_name)
-
-        upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
-
         if not customer:
             return {'message': f'Customer ({company_name}) was not found!'}, 404
 
@@ -103,7 +98,7 @@ class CustomerResource(Resource):
                 if not Customer.allowed_logo_file(logo.filename):
                     return {'message': 'Invalid file type for logo. Allowed types: jpg, jpeg, png'}, 400
                 filename = secure_filename(logo.filename)
-                logo.save(os.path.join(upload_folder, filename))
+                logo.save(os.path.join(UPLOAD_FOLDER_LOGO, filename))
 
 
         if customer.state.value.lower() != request.form['state'].lower():
