@@ -19,11 +19,11 @@ from api.resources.document import (DocumentUploadResource,
 
 baseDir = os.path.abspath(os.path.dirname(__file__))
 
-
 app = Flask(__name__)
 
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://username:password@postgres:5432/databasename'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'data.db')
+
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://amir:amir1234@localhost/postgres'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'secretkey'
 app.config['UPLOAD_FOLDER'] = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
