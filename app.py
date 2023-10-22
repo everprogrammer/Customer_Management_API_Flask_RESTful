@@ -3,12 +3,15 @@ from flask import Flask
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
-
-from files.resources import (CustomerResource, CustomerListResource, 
-                             DocumentUploadResource,  DocumentDownloadResource,
-                             DocumentDeleteResource, DocumentListResource, 
-                             LogResource)
-from db import db
+from api.resources.user import (UserResource, UserRegisterResource, 
+                                  UserListResource, UserLoginResource)
+from api.resources.customer import CustomerResource, CustomerListResource
+from api.resources.document import (DocumentUploadResource, 
+                                      DocumentDownloadResource,
+                                      DocumentDeleteResource, 
+                                      DocumentListResource, )
+from api.resources.log import LogResource
+from api.utils.db import db
 
 
 baseDir = os.path.abspath(os.path.dirname(__file__))
@@ -43,7 +46,10 @@ api.add_resource(DocumentDownloadResource, '/customer/<int:customer_id>/download
 api.add_resource(DocumentDeleteResource, '/customer/<int:customer_id>/delete-doc/<int:document_id>')
 api.add_resource(DocumentListResource, '/customer/<int:customer_id>/docs')
 api.add_resource(LogResource, '/customer/<int:customer_id>/statelogs')
-
+api.add_resource(UserRegisterResource, '/register')
+api.add_resource(UserLoginResource, '/login')
+api.add_resource(UserResource, '/user/<int:user_id>')
+api.add_resource(UserListResource, '/users')
 
 
 

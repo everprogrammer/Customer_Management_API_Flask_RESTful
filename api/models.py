@@ -2,10 +2,10 @@ from datetime import datetime
 from enum import Enum
 from werkzeug.security import generate_password_hash
 
-from .CONST import (ALLOWED_EXTENSIONS_PHOTOS, 
+from api.utils.CONST import (ALLOWED_EXTENSIONS_PHOTOS, 
                     ALLOWED_EXTENSIONS_DOCUMENTS, 
                     preferred_tz)
-from db import db
+from api.utils.db import db
 
 
 class CustomerState(Enum):
@@ -136,6 +136,13 @@ class User(db.Model):
     def __init__(self, username, password):
         self.username = username
         self.password = generate_password_hash(password)
+
+    def json(self):
+        return {
+            'id': self.id,
+            'username': self.username, 
+            'password': self.password
+            }
 
     def save_to_db(self):
         db.session.add(self)

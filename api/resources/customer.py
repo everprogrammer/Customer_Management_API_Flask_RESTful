@@ -5,9 +5,11 @@ from flask import send_from_directory
 # from .models import Customer, Document, Log, User
 from werkzeug.utils import secure_filename
 from datetime import datetime
-from .CONST import preferred_tz
+from api.utils.CONST import preferred_tz
+from flask_jwt_extended import jwt_required
 
-from .models import Customer, Document, Log
+from api.models import Customer, Document, Log
+
 
 
 class CustomerResource(Resource):
@@ -16,7 +18,7 @@ class CustomerResource(Resource):
     parser.add_argument('address', type=str, required=True)
     parser.add_argument('state', type=str, required=True)
 
-
+    @jwt_required()
     def post(self, company_name):
         upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
 
@@ -74,7 +76,7 @@ class CustomerResource(Resource):
             return customer.json(), 200
         return {'message': f'Customer ({company_name}) was not found!'}, 404
     
-
+    @jwt_required()
     def delete(self, company_name):
         customer = Customer.find_by_company_name(company_name)
 
@@ -82,7 +84,7 @@ class CustomerResource(Resource):
             customer.delete_from_db()
         return {'message': 'Customer deleted successfully'}, 200
     
-    
+    @jwt_required()
     def put(self, company_name):
         customer = Customer.find_by_company_name(company_name)
 
@@ -127,97 +129,9 @@ class CustomerResource(Resource):
 
 
 class CustomerListResource(Resource):
+    @jwt_required()
     def get(self):
         customers = Customer.query.all()
 
-        return {'customers': [customer.json() for customer in customers]}
+        return {'customers': [customer.json() for customer in customers]}, 200
 
-
-class DocumentUploadResource(Resource):
-    parser = reqparse.RequestParser()
-    parser.add_argument('filename', type=str, required=True)
-
-    def post(self, customer_id, name):
-        upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
-
-        # data = DocumentResource.parser.parse_args()
-        customer = Customer.find_by_company_id(customer_id)
-
-        if not customer:
-            return {'message': 'Customer not found!'}, 404
-        
-        # FILE UPLOAD
-        if 'document' in request.files:
-            document = request.files['document']
-
-            if document:
-                if not Document.allowed_document_file(document.filename):
-                    return {'message': 'Invalid file type for document'}, 400
-                
-                filename = secure_filename(document.filename)
-
-                new_document = Document(
-                    name=name,
-                    filename=filename,
-                    customer_id=customer_id
-                )
-
-                try:
-                    new_document.save_to_db()
-                except:
-                    return {'message': 'An error occurred inserting the document!'}, 500
-                
-                document.save(os.path.join(upload_folder, filename))
-
-                return new_document.json()
-        
-        return {'message': 'No document file provided!'}
-    
-class DocumentDownloadResource(Resource):
-    def get(self, customer_id, document_id):
-        document = Document.query.filter_by(customer_id=customer_id, id=document_id).first()
-
-        if not document:
-            return {'message': 'Document not found!'}, 404
-        
-        upload_folder = "C:\\Users\\Asus\\Documents\\GitHub\\Customer_Management_API_Flask_RESTful\\uploads"
-
-        response = make_response(send_from_directory(upload_folder, document.filename, as_attachment=True))
-        response.headers['Content-Disposition'] = f'attachment; filename={document.filename}'
-
-        return response 
-    
-        
-
-class DocumentDeleteResource(Resource):
-    def delete(self, customer_id, document_id):
-        document = Document.query.filter_by(customer_id=customer_id, id=document_id).first()
-
-        if document:
-            document.delete_from_db()
-            return {'message': 'Document deleted successfully!'}, 200
-        return {'message': 'Document not found!'}, 404
-
-
-
-class DocumentListResource(Resource):
-    def get(self, customer_id):
-        documents = Document.query.filter_by(customer_id=customer_id)
-
-        return [document.json() for document in documents]
-
-class LogResource(Resource):
-
-    def get(self, customer_id):
-        # customer = Customer.find_by_company_id(customer_id)
-
-        logs = Log.query.filter_by(customer_id=customer_id)
-
-        return [log.json() for log in logs]
-
-
-
-
-
-        
-        
